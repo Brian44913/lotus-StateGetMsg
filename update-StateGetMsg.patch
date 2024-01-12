@@ -1,0 +1,302 @@
+diff -Naur old/api/api_full.go new/api/api_full.go
+--- old/api/api_full.go	2024-01-12 22:40:39.510547625 +0800
++++ new/api/api_full.go	2024-01-12 22:07:23.953336880 +0800
+@@ -518,6 +518,7 @@
+ 	// different signature, but with all other parameters matching (source/destination,
+ 	// nonce, params, etc.)
+ 	StateSearchMsg(ctx context.Context, from types.TipSetKey, msg cid.Cid, limit abi.ChainEpoch, allowReplaced bool) (*MsgLookup, error) //perm:read
++	StateGetMsg(ctx context.Context, from types.TipSetKey, msg cid.Cid, limit abi.ChainEpoch, allowReplaced bool) (*StateGetMsg, error) //perm:read
+ 	// StateWaitMsg looks back up to limit epochs in the chain for a message.
+ 	// If not found, it blocks until the message arrives on chain, and gets to the
+ 	// indicated confidence depth.
+@@ -967,6 +968,13 @@
+ 	Height    abi.ChainEpoch
+ }
+ 
++type StateGetMsg struct {
++	Cid			cid.Cid						`json:"Cid"`
++	MethodID	abi.MethodNum				`json:"MethodID"`
++	Method		string						`json:"Method"`
++	Params		map[string]interface{}		`json:"Params"`
++}
++
+ type MsgGasCost struct {
+ 	Message            cid.Cid // Can be different than requested, in case it was replaced, but only gas values changed
+ 	GasUsed            abi.TokenAmount
+diff -Naur old/api/api_gateway.go new/api/api_gateway.go
+--- old/api/api_gateway.go	2024-01-12 22:40:39.510547625 +0800
++++ new/api/api_gateway.go	2024-01-12 22:07:23.953336880 +0800
+@@ -85,6 +85,7 @@
+ 	StateVerifierStatus(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*abi.StoragePower, error)
+ 	StateVerifiedClientStatus(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*abi.StoragePower, error)
+ 	StateSearchMsg(ctx context.Context, from types.TipSetKey, msg cid.Cid, limit abi.ChainEpoch, allowReplaced bool) (*MsgLookup, error)
++	StateGetMsg(ctx context.Context, from types.TipSetKey, msg cid.Cid, limit abi.ChainEpoch, allowReplaced bool) (*StateGetMsg, error)
+ 	StateWaitMsg(ctx context.Context, cid cid.Cid, confidence uint64, limit abi.ChainEpoch, allowReplaced bool) (*MsgLookup, error)
+ 	WalletBalance(context.Context, address.Address) (types.BigInt, error)
+ 	Version(context.Context) (APIVersion, error)
+diff -Naur old/api/mocks/mock_full.go new/api/mocks/mock_full.go
+--- old/api/mocks/mock_full.go	2024-01-12 22:40:39.510547625 +0800
++++ new/api/mocks/mock_full.go	2024-01-12 22:07:23.953336880 +0800
+@@ -3788,6 +3788,21 @@
+ 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StateSearchMsg", reflect.TypeOf((*MockFullNode)(nil).StateSearchMsg), arg0, arg1, arg2, arg3, arg4)
+ }
+ 
++// StateGetMsg mocks base method.
++func (m *MockFullNode) StateGetMsg(arg0 context.Context, arg1 types.TipSetKey, arg2 cid.Cid, arg3 abi.ChainEpoch, arg4 bool) (*api.StateGetMsg, error) {
++	m.ctrl.T.Helper()
++	ret := m.ctrl.Call(m, "StateGetMsg", arg0, arg1, arg2, arg3, arg4)
++	ret0, _ := ret[0].(*api.StateGetMsg)
++	ret1, _ := ret[1].(error)
++	return ret0, ret1
++}
++
++// StateGetMsg indicates an expected call of StateGetMsg.
++func (mr *MockFullNodeMockRecorder) StateGetMsg(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
++	mr.mock.ctrl.T.Helper()
++	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StateGetMsg", reflect.TypeOf((*MockFullNode)(nil).StateGetMsg), arg0, arg1, arg2, arg3, arg4)
++}
++
+ // StateSectorExpiration mocks base method.
+ func (m *MockFullNode) StateSectorExpiration(arg0 context.Context, arg1 address.Address, arg2 abi.SectorNumber, arg3 types.TipSetKey) (*miner0.SectorExpiration, error) {
+ 	m.ctrl.T.Helper()
+diff -Naur old/api/proxy_gen.go new/api/proxy_gen.go
+--- old/api/proxy_gen.go	2024-01-12 22:40:39.510547625 +0800
++++ new/api/proxy_gen.go	2024-01-12 22:15:45.000000000 +0800
+@@ -562,6 +562,8 @@
+ 	StateReplay func(p0 context.Context, p1 types.TipSetKey, p2 cid.Cid) (*InvocResult, error) `perm:"read"`
+ 
+ 	StateSearchMsg func(p0 context.Context, p1 types.TipSetKey, p2 cid.Cid, p3 abi.ChainEpoch, p4 bool) (*MsgLookup, error) `perm:"read"`
++	
++	StateGetMsg func(p0 context.Context, p1 types.TipSetKey, p2 cid.Cid, p3 abi.ChainEpoch, p4 bool) (*StateGetMsg, error) `perm:"read"`
+ 
+ 	StateSectorExpiration func(p0 context.Context, p1 address.Address, p2 abi.SectorNumber, p3 types.TipSetKey) (*miner.SectorExpiration, error) `perm:"read"`
+ 
+@@ -812,6 +814,8 @@
+ 	StateReplay func(p0 context.Context, p1 types.TipSetKey, p2 cid.Cid) (*InvocResult, error) ``
+ 
+ 	StateSearchMsg func(p0 context.Context, p1 types.TipSetKey, p2 cid.Cid, p3 abi.ChainEpoch, p4 bool) (*MsgLookup, error) ``
++	
++	StateGetMsg func(p0 context.Context, p1 types.TipSetKey, p2 cid.Cid, p3 abi.ChainEpoch, p4 bool) (*StateGetMsg, error) ``
+ 
+ 	StateSectorGetInfo func(p0 context.Context, p1 address.Address, p2 abi.SectorNumber, p3 types.TipSetKey) (*miner.SectorOnChainInfo, error) ``
+ 
+@@ -3841,6 +3845,17 @@
+ 	return nil, ErrNotSupported
+ }
+ 
++func (s *FullNodeStruct) StateGetMsg(p0 context.Context, p1 types.TipSetKey, p2 cid.Cid, p3 abi.ChainEpoch, p4 bool) (*StateGetMsg, error) {
++	if s.Internal.StateGetMsg == nil {
++		return nil, ErrNotSupported
++	}
++	return s.Internal.StateGetMsg(p0, p1, p2, p3, p4)
++}
++
++func (s *FullNodeStub) StateGetMsg(p0 context.Context, p1 types.TipSetKey, p2 cid.Cid, p3 abi.ChainEpoch, p4 bool) (*StateGetMsg, error) {
++	return nil, ErrNotSupported
++}
++
+ func (s *FullNodeStruct) StateSectorExpiration(p0 context.Context, p1 address.Address, p2 abi.SectorNumber, p3 types.TipSetKey) (*miner.SectorExpiration, error) {
+ 	if s.Internal.StateSectorExpiration == nil {
+ 		return nil, ErrNotSupported
+@@ -5150,6 +5165,17 @@
+ 	return nil, ErrNotSupported
+ }
+ 
++func (s *GatewayStruct) StateGetMsg(p0 context.Context, p1 types.TipSetKey, p2 cid.Cid, p3 abi.ChainEpoch, p4 bool) (*StateGetMsg, error) {
++	if s.Internal.StateGetMsg == nil {
++		return nil, ErrNotSupported
++	}
++	return s.Internal.StateGetMsg(p0, p1, p2, p3, p4)
++}
++
++func (s *GatewayStub) StateGetMsg(p0 context.Context, p1 types.TipSetKey, p2 cid.Cid, p3 abi.ChainEpoch, p4 bool) (*StateGetMsg, error) {
++	return nil, ErrNotSupported
++}
++
+ func (s *GatewayStruct) StateSectorGetInfo(p0 context.Context, p1 address.Address, p2 abi.SectorNumber, p3 types.TipSetKey) (*miner.SectorOnChainInfo, error) {
+ 	if s.Internal.StateSectorGetInfo == nil {
+ 		return nil, ErrNotSupported
+diff -Naur old/api/v0api/full.go new/api/v0api/full.go
+--- old/api/v0api/full.go	2024-01-12 22:40:39.510547625 +0800
++++ new/api/v0api/full.go	2024-01-12 22:07:23.953336880 +0800
+@@ -468,6 +468,7 @@
+ 	// different signature, but with all other parameters matching (source/destination,
+ 	// nonce, params, etc.)
+ 	StateSearchMsg(context.Context, cid.Cid) (*api.MsgLookup, error) //perm:read
++	StateGetMsg(context.Context, cid.Cid) (*api.StateGetMsg, error) //perm:read
+ 	// StateSearchMsgLimited looks back up to limit epochs in the chain for a message, and returns its receipt and the tipset where it was executed
+ 	//
+ 	// NOTE: If a replacing message is found on chain, this method will return
+diff -Naur old/api/v0api/proxy_gen.go new/api/v0api/proxy_gen.go
+--- old/api/v0api/proxy_gen.go	2024-01-12 22:40:39.510547625 +0800
++++ new/api/v0api/proxy_gen.go	2024-01-12 22:07:23.953336880 +0800
+@@ -351,6 +351,8 @@
+ 	StateReplay func(p0 context.Context, p1 types.TipSetKey, p2 cid.Cid) (*api.InvocResult, error) `perm:"read"`
+ 
+ 	StateSearchMsg func(p0 context.Context, p1 cid.Cid) (*api.MsgLookup, error) `perm:"read"`
++	
++	StateGetMsg func(p0 context.Context, p1 cid.Cid) (*api.StateGetMsg, error) `perm:"read"`
+ 
+ 	StateSearchMsgLimited func(p0 context.Context, p1 cid.Cid, p2 abi.ChainEpoch) (*api.MsgLookup, error) `perm:"read"`
+ 
+@@ -2233,6 +2235,17 @@
+ 	return nil, ErrNotSupported
+ }
+ 
++func (s *FullNodeStruct) StateGetMsg(p0 context.Context, p1 cid.Cid) (*api.StateGetMsg, error) {
++	if s.Internal.StateGetMsg == nil {
++		return nil, ErrNotSupported
++	}
++	return s.Internal.StateGetMsg(p0, p1)
++}
++
++func (s *FullNodeStub) StateGetMsg(p0 context.Context, p1 cid.Cid) (*api.StateGetMsg, error) {
++	return nil, ErrNotSupported
++}
++
+ func (s *FullNodeStruct) StateSearchMsgLimited(p0 context.Context, p1 cid.Cid, p2 abi.ChainEpoch) (*api.MsgLookup, error) {
+ 	if s.Internal.StateSearchMsgLimited == nil {
+ 		return nil, ErrNotSupported
+diff -Naur old/api/v0api/v0mocks/mock_full.go new/api/v0api/v0mocks/mock_full.go
+--- old/api/v0api/v0mocks/mock_full.go	2024-01-12 22:40:39.510547625 +0800
++++ new/api/v0api/v0mocks/mock_full.go	2024-01-12 22:07:23.953336880 +0800
+@@ -2878,6 +2878,21 @@
+ 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StateSearchMsg", reflect.TypeOf((*MockFullNode)(nil).StateSearchMsg), arg0, arg1)
+ }
+ 
++// StateGetMsg mocks base method.
++func (m *MockFullNode) StateGetMsg(arg0 context.Context, arg1 cid.Cid) (*api.StateGetMsg, error) {
++	m.ctrl.T.Helper()
++	ret := m.ctrl.Call(m, "StateGetMsg", arg0, arg1)
++	ret0, _ := ret[0].(*api.StateGetMsg)
++	ret1, _ := ret[1].(error)
++	return ret0, ret1
++}
++
++// StateGetMsg indicates an expected call of StateGetMsg.
++func (mr *MockFullNodeMockRecorder) StateGetMsg(arg0, arg1 interface{}) *gomock.Call {
++	mr.mock.ctrl.T.Helper()
++	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StateGetMsg", reflect.TypeOf((*MockFullNode)(nil).StateGetMsg), arg0, arg1)
++}
++
+ // StateSearchMsgLimited mocks base method.
+ func (m *MockFullNode) StateSearchMsgLimited(arg0 context.Context, arg1 cid.Cid, arg2 abi.ChainEpoch) (*api.MsgLookup, error) {
+ 	m.ctrl.T.Helper()
+diff -Naur old/api/v0api/v1_wrapper.go new/api/v0api/v1_wrapper.go
+--- old/api/v0api/v1_wrapper.go	2024-01-12 22:40:39.510547625 +0800
++++ new/api/v0api/v1_wrapper.go	2024-01-12 22:07:23.953336880 +0800
+@@ -41,6 +41,10 @@
+ 	return w.FullNode.StateSearchMsg(ctx, types.EmptyTSK, msg, api.LookbackNoLimit, true)
+ }
+ 
++func (w *WrapperV1Full) StateGetMsg(ctx context.Context, msg cid.Cid) (*api.StateGetMsg, error) {
++	return w.FullNode.StateGetMsg(ctx, types.EmptyTSK, msg, api.LookbackNoLimit, true)
++}
++
+ func (w *WrapperV1Full) StateSearchMsgLimited(ctx context.Context, msg cid.Cid, limit abi.ChainEpoch) (*api.MsgLookup, error) {
+ 	return w.FullNode.StateSearchMsg(ctx, types.EmptyTSK, msg, limit, true)
+ }
+diff -Naur old/gateway/node.go new/gateway/node.go
+--- old/gateway/node.go	2024-01-12 22:40:39.574549531 +0800
++++ new/gateway/node.go	2024-01-12 22:33:12.000000000 +0800
+@@ -90,6 +90,7 @@
+ 	StateNetworkName(context.Context) (dtypes.NetworkName, error)
+ 	StateNetworkVersion(context.Context, types.TipSetKey) (network.Version, error)
+ 	StateSearchMsg(ctx context.Context, from types.TipSetKey, msg cid.Cid, limit abi.ChainEpoch, allowReplaced bool) (*api.MsgLookup, error)
++	StateGetMsg(ctx context.Context, from types.TipSetKey, msg cid.Cid, limit abi.ChainEpoch, allowReplaced bool) (*api.StateGetMsg, error)
+ 	StateWaitMsg(ctx context.Context, cid cid.Cid, confidence uint64, limit abi.ChainEpoch, allowReplaced bool) (*api.MsgLookup, error)
+ 	StateReadState(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*api.ActorState, error)
+ 	StateMinerPower(context.Context, address.Address, types.TipSetKey) (*api.MinerPower, error)
+diff -Naur old/gateway/proxy_fil.go new/gateway/proxy_fil.go
+--- old/gateway/proxy_fil.go	2024-01-12 22:40:39.574549531 +0800
++++ new/gateway/proxy_fil.go	2024-01-12 22:34:33.000000000 +0800
+@@ -424,6 +424,22 @@
+ 	return gw.target.StateSearchMsg(ctx, from, msg, limit, allowReplaced)
+ }
+ 
++func (gw *Node) StateGetMsg(ctx context.Context, from types.TipSetKey, msg cid.Cid, limit abi.ChainEpoch, allowReplaced bool) (*api.StateGetMsg, error) {
++	if err := gw.limit(ctx, stateRateLimitTokens); err != nil {
++		return nil, err
++	}
++	if limit == api.LookbackNoLimit {
++		limit = gw.stateWaitLookbackLimit
++	}
++	if gw.stateWaitLookbackLimit != api.LookbackNoLimit && limit > gw.stateWaitLookbackLimit {
++		limit = gw.stateWaitLookbackLimit
++	}
++	if err := gw.checkTipsetKey(ctx, from); err != nil {
++		return nil, err
++	}
++	return gw.target.StateGetMsg(ctx, from, msg, limit, allowReplaced)
++}
++
+ func (gw *Node) StateWaitMsg(ctx context.Context, msg cid.Cid, confidence uint64, limit abi.ChainEpoch, allowReplaced bool) (*api.MsgLookup, error) {
+ 	if err := gw.limit(ctx, stateRateLimitTokens); err != nil {
+ 		return nil, err
+diff -Naur old/node/impl/full/state.go new/node/impl/full/state.go
+--- old/node/impl/full/state.go	2024-01-12 22:40:39.594550128 +0800
++++ new/node/impl/full/state.go	2024-01-12 22:07:23.953336880 +0800
+@@ -70,6 +70,7 @@
+ 	StateSectorGetInfo(ctx context.Context, maddr address.Address, n abi.SectorNumber, tsk types.TipSetKey) (*miner.SectorOnChainInfo, error)
+ 	StateVerifiedClientStatus(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*abi.StoragePower, error)
+ 	StateSearchMsg(ctx context.Context, from types.TipSetKey, msg cid.Cid, limit abi.ChainEpoch, allowReplaced bool) (*api.MsgLookup, error)
++	StateGetMsg(ctx context.Context, from types.TipSetKey, msg cid.Cid, limit abi.ChainEpoch, allowReplaced bool) (*api.StateGetMsg, error)
+ 	StateWaitMsg(ctx context.Context, cid cid.Cid, confidence uint64, limit abi.ChainEpoch, allowReplaced bool) (*api.MsgLookup, error)
+ }
+ 
+@@ -666,6 +667,55 @@
+ 	return nil, nil
+ }
+ 
++func (m *StateModule) StateGetMsg(ctx context.Context, tsk types.TipSetKey, msg cid.Cid, lookbackLimit abi.ChainEpoch, allowReplaced bool) (*api.StateGetMsg, error) {
++	cmsg, err := m.Chain.GetCMessage(ctx, msg)
++	if err != nil {
++		return nil, xerrors.Errorf("failed to load message after successful receipt search: %w", err)
++	}
++
++	vmsg := cmsg.VMMessage()
++	toact, err := m.StateGetActor(ctx, vmsg.To, types.EmptyTSK)
++	if err != nil {
++		return nil, err
++	}
++	Params, err := JsonParams(toact.Code, vmsg.Method, vmsg.Params)
++	if err != nil {
++		return nil, err
++	}else{
++		var params map[string]interface{}
++		err := json.Unmarshal([]byte(Params), &params)
++		if err != nil {
++			return nil, err
++		}
++		return &api.StateGetMsg{
++			Cid:      msg,
++			MethodID: vmsg.Method,
++			Method:   consensus.NewActorRegistry().Methods[toact.Code][vmsg.Method].Name,
++			Params:   params,
++		}, nil
++	}
++}
++func JsonParams(code cid.Cid, method abi.MethodNum, params []byte) (string, error) {
++	ar := consensus.NewActorRegistry()
++
++	_, found := ar.Methods[code][method]
++	if !found {
++		return fmt.Sprintf("raw:%x", params), nil
++	}
++
++	p, err := stmgr.GetParamType(ar, code, method) // todo use api for correct actor registry
++	if err != nil {
++		return "", err
++	}
++
++	if err := p.UnmarshalCBOR(bytes.NewReader(params)); err != nil {
++		return "", err
++	}
++
++	b, err := json.MarshalIndent(p, "", "  ")
++	return string(b), err
++}
++
+ func (m *StateModule) StateListMiners(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error) {
+ 	ts, err := m.Chain.GetTipSetFromKey(ctx, tsk)
+ 	if err != nil {
