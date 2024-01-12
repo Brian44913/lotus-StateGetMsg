@@ -3,7 +3,7 @@
 * 实现了类似`lotus-shed msg 消息CID`的api请求
 * 仅上传了需要修改的文件，方便自行合并
 * 基于 v1.25.2 
-* [代码修改查看 · Brian44913/lotus-StateGetMsg@ae68da1](https://github.com/Brian44913/lotus-StateGetMsg/commit/ae68da161bae56f7b7e69104b149e8929b6bcdec)
+* [代码修改查看 · Brian44913/lotus-StateGetMsg](https://github.com/Brian44913/lotus-StateGetMsg/commit/d846fb216b7067ffd3189cfb7283fec04e577104)
 
 
 #### 一键合并代码
